@@ -1,6 +1,8 @@
 # Create your views here.
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django.http import HttpResponse
+from .maps import staty, patch_test, avg_time
 
 @api_view(['GET'])
 def api_hello_world(request):
@@ -8,3 +10,17 @@ def api_hello_world(request):
         'hello2': 'world2',
         'hello1': 'world1',
     })
+
+# do testów
+def call_staty(request):
+    staty(50)
+
+def call_test(request):
+    records, requests = patch_test()
+    response = "Records %d, requests %d" % (records, requests)
+    return HttpResponse(response)
+
+def call_avg(requests):
+    avg, max = avg_time()
+    response = "avg %f min, max %f min" % (avg/60, max/60)
+    return HttpResponse(response)

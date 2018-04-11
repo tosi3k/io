@@ -21,4 +21,8 @@ from rest_api import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('hello', views.api_hello_world),
+    # do testów
+    path('staty', views.call_staty),
+    path('test', views.call_test),
+    path('avg', views.call_avg)
 ]
