@@ -20,8 +20,11 @@ def patch_test():
 def patch_all():
     records = 0
     requests = 0
+    i = 0
     for station in Station.objects.all():
+        i += 1
         rec, req = patch(station)
+        print("Computed %d stations, saved  %d records, send %d requests so far" % (i, records, requests))
         records += rec
         requests += req
 
