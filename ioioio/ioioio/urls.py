@@ -16,13 +16,14 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from rest_api import views
+from rest_api import views as rest_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('hello', views.api_hello_world),
+    path('hello', rest_views.api_hello_world),
     # do testów
-    path('staty', views.call_staty),
-    path('test', views.call_test),
-    path('avg', views.call_avg)
+    path('staty', rest_views.call_staty),
+    path('test', rest_views.call_test),
+    path('avg', rest_views.call_avg),
+    path('dijkstra/<int:a_id>/<int:b_id>/', rest_views.call_dijkstra)
 ]

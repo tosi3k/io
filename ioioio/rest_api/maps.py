@@ -2,15 +2,15 @@ from datetime import datetime
 from decimal import *
 import random
 import googlemaps
+import json
 
 from .models import Station, Path
 from django.db.models import Max, Avg
 
 import pprint
 
-MAX_COUNT = 10
-GOOGLE_API_KEY = 'AIzaSyANll1aFar0gP3vNd4x_AuIvD-gVUyBWzU '
-MAX_DISTANCE = 0.1  #0.05 is around 20 min riding
+MAX_COUNT = 25
+MAX_DISTANCE = 0.08  #0.05 is around 20 min riding
 
 def patch_test():
     records, requests = patch(Station.objects.all()[0])
@@ -21,16 +21,18 @@ def patch_all():
     records = 0
     requests = 0
     i = 0
+    with open('api_keys.json', 'r') as keys_f:
+        keys = json.load(keys_f)["keys"]
     for station in Station.objects.all():
         i += 1
-        rec, req = patch(station)
+        rec, req = patch(station, keys[0])
         print("Computed %d stations, saved  %d records, send %d requests so far" % (i, records, requests))
         records += rec
         requests += req
 
     return records, requests
 
-def patch(station):
+def patch(station, key):
     destinations = []
     for b in Station.objects.all():
         if b != station and \
@@ -38,7 +40,7 @@ def patch(station):
         map_distance(station, b) < Decimal(MAX_DISTANCE):
             destinations.append(b)
 
-    records, requests = compute_paths(station, destinations, max_count = 25)
+    records, requests = compute_paths(station, destinations, key, max_count = 25)
     return records, requests
 
 def map_distance(a, b):
@@ -49,8 +51,8 @@ def map_distance(a, b):
 
     return ((alat - blat)**Decimal(2) + (alon - blon)**Decimal(2))**Decimal(0.5)
 
-def compute_paths(origin, destinations, max_count = MAX_COUNT, max_time = 60*60):
-    gmaps = googlemaps.Client(key = GOOGLE_API_KEY)
+def compute_paths(origin, destinations, key, max_count = MAX_COUNT, max_time = 60*60):
+    gmaps = googlemaps.Client(key = key)
     groups = group_destinations(destinations, max_count)
 
     records = 0
