@@ -69,9 +69,10 @@ def compute_paths(origin, destinations, key, max_count = MAX_COUNT, max_time = 6
             for i in range(len(groups[p][1])):
                 row = times[0]['elements']
                 time = row[i]['duration']['value']
-                if time <= max_time:
-                    records += 2
-                    add_path(origin, groups[p][0][i], time)
+                if time > max_time:
+                    print("More than hour")
+                records += 2
+                add_path(origin, groups[p][0][i], time)
     return records, requests
 
 def group_destinations(destinations, max_count):
