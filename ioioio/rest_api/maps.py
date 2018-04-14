@@ -10,7 +10,7 @@ from django.db.models import Max, Avg
 import pprint
 
 MAX_COUNT = 25
-MAX_DISTANCE = 0.08  #0.05 is around 20 min riding
+MAX_DISTANCE = 0.06  #0.05 is around 20 min riding
 
 def patch_test():
     records, requests = patch(Station.objects.all()[0])
@@ -25,7 +25,7 @@ def patch_all():
         keys = json.load(keys_f)["keys"]
     for station in Station.objects.all():
         i += 1
-        rec, req = patch(station, keys[0])
+        rec, req = patch(station, keys[1])
         print("Computed %d stations, saved  %d records, send %d requests so far" % (i, records, requests))
         records += rec
         requests += req
