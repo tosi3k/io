@@ -17,7 +17,7 @@ def patch_test():
     print("Added %d records, send %d requests" % (records, requests))
     return records, requests
 
-def patch_all():
+def patch_all(key_num = 0):
     records = 0
     requests = 0
     i = 0
@@ -25,7 +25,7 @@ def patch_all():
         keys = json.load(keys_f)["keys"]
     for station in Station.objects.all():
         i += 1
-        rec, req = patch(station, keys[1])
+        rec, req = patch(station, keys[key_num])
         print("Computed %d stations, saved  %d records, send %d requests so far" % (i, records, requests))
         records += rec
         requests += req
