@@ -1,9 +1,13 @@
 from .models import Station, Path
 from collections import defaultdict
+from django.forms import model_to_dict
+
+# one has to wait 2 minutes before using Veturilo after putting back the bicycle
+STATION_LAG = 120
 
 class Graph:
     def __init__(self):
-        self.nodes = set(Station)
+        self.nodes = set()
         self.edges = defaultdict(list)
         self.distances = {}
 
@@ -13,8 +17,8 @@ class Graph:
     def add_edge(self, a, b, distance):
         self.edges[a].append(b)
         self.edges[b].append(a)
-        self.distances[(a, b)] = distance
-        self.distances[(b, a)] = distance
+        self.distances[(a, b)] = distance + STATION_LAG
+        self.distances[(b, a)] = distance + STATION_LAG
 
 def station_graph():
     result = Graph()
@@ -30,11 +34,13 @@ def station_graph():
 
     return result
 
-def dijsktra(graph, source):
+GRAPH = station_graph()
+
+def dijsktra(source):
     visited = {source: 0}
     path = {source: source}
 
-    nodes = set(graph.nodes)
+    nodes = set(GRAPH.nodes)
 
     while nodes:
         min_node = None
@@ -52,8 +58,8 @@ def dijsktra(graph, source):
         nodes.remove(min_node)
         current_weight = visited[min_node]
 
-        for node in graph.edges[min_node]:
-            weight = current_weight + graph.distances[(min_node, node)]
+        for node in GRAPH.edges[min_node]:
+            weight = current_weight + GRAPH.distances[(min_node, node)]
             if node not in visited or weight < visited[node]:
                 visited[node] = weight
                 path[node] = min_node
@@ -61,14 +67,26 @@ def dijsktra(graph, source):
     return path
 
 def compute_path(station_a, station_b):
-    graph = station_graph()
-    path = dijsktra(graph, station_a)
+    tree = dijsktra(station_a)
+    path = []
     result = []
+
     node = station_b
-
     while node != station_a:
-        result.insert(0, node)
-        node = path[node]
+        path.insert(0, node)
+        node = tree[node]
+    path.insert(0, station_a)
 
-    result.insert(0, station_a)
-    return path
+    eta = 0
+    for i in range(len(path)):
+        if i:
+            eta += GRAPH.distances[path[i-1], path[i]]
+        station = model_to_dict(path[i])
+        result.append({
+            'name': station['name'],
+            'longitude': station['longitude'],
+            'latitude': station['latitude'],
+            'ETA': eta - STATION_LAG if i else 0
+        })
+
+    return result

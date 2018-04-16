@@ -25,7 +25,7 @@ SECRET_KEY = '^r^9ahldtvv49dj)0i8l_zt_w*-pzlfmy#du8q1^4$3)p$4&oh'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['lk.mimuw.edu.pl', '193.0.96.129']
+ALLOWED_HOSTS = ['lk.mimuw.edu.pl', '193.0.96.129', '127.0.0.1']
 
 
 # Application definition
@@ -124,6 +124,8 @@ STATIC_URL = '/static/'
 TEMPLATE_DIRS = (os.path.join(BASE_DIR,  'templates'),)
 
 REST_FRAMEWORK = {
-    # Use Django's standard `django.contrib.auth` permissions,
-    # or allow read-only access for unauthenticated users.
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    )
 }
