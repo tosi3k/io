@@ -25,7 +25,7 @@ SECRET_KEY = '^r^9ahldtvv49dj)0i8l_zt_w*-pzlfmy#du8q1^4$3)p$4&oh'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['lk.mimuw.edu.pl', '193.0.96.129']
 
 
 # Application definition
