@@ -4,6 +4,7 @@ from django.forms import model_to_dict
 
 # one has to wait 2 minutes before using Veturilo after putting back the bicycle
 STATION_LAG = 120
+DISTANCE_THRESHOLD = 1200
 
 class Graph:
     def __init__(self):
@@ -15,10 +16,11 @@ class Graph:
         self.nodes.add(station)
 
     def add_edge(self, a, b, distance):
-        self.edges[a].append(b)
-        self.edges[b].append(a)
-        self.distances[(a, b)] = distance + STATION_LAG
-        self.distances[(b, a)] = distance + STATION_LAG
+        if distance <= DISTANCE_THRESHOLD:
+            self.edges[a].append(b)
+            self.edges[b].append(a)
+            self.distances[(a, b)] = distance + STATION_LAG
+            self.distances[(b, a)] = distance + STATION_LAG
 
 def station_graph():
     result = Graph()
