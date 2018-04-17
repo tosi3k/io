@@ -1,3 +1,4 @@
+from decimal import Decimal, InvalidOperation
 from .models import Station, Path
 from collections import defaultdict
 from django.forms import model_to_dict
@@ -96,3 +97,28 @@ def compute_path(station_a, station_b):
         })
 
     return result
+
+def get_id_or_none(qs_value):
+    if qs_value[0].isdigit():
+        coords = qs_value.split('|')
+        if len(coords) != 2:
+            return None
+        try:
+            latitude, longitude = Decimal(coords[0]), Decimal(coords[1])
+        except InvalidOperation:
+            return None
+
+        dist = 100
+        result = None
+        for id, (_, lat, lon) in STATIONS.items():
+            tmp = float((latitude - Decimal(lat)) ** Decimal(2) + (longitude - Decimal(lon)) ** Decimal(2))
+            if dist > tmp:
+                dist = tmp
+                result = id
+
+        return result
+    else:
+        for id, (name, _, _) in STATIONS.items():
+            if name == qs_value:
+                return id
+        return None

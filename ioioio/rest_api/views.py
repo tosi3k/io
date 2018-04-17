@@ -1,6 +1,5 @@
 # Create your views here.
-from .models import Station
-from .path import compute_path
+from .path import compute_path, get_id_or_none
 from django.http import HttpResponse
 from rest_framework.response import Response
 from .maps import staty, patch_test, avg_time
@@ -32,5 +31,17 @@ def call_avg(requests):
 @renderer_classes((JSONRenderer,))
 def call_dijkstra(request, a_id, b_id):
     path = compute_path(a_id, b_id)
+    print(path)
+    return Response(path)
+
+@api_view(['GET'])
+@renderer_classes((JSONRenderer,))
+def dijkstra(request):
+    id_a = get_id_or_none(request.GET.get('station_a'))
+    id_b = get_id_or_none(request.GET.get('station_b'))
+    if not id_a or not id_b:
+        return Response({'Error': 'Failed to parse the query string'})
+    print(id_a, id_b)
+    path = compute_path(id_a, id_b)
     print(path)
     return Response(path)
