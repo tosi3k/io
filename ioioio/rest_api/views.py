@@ -31,9 +31,6 @@ def call_avg(requests):
 @api_view(['GET'])
 @renderer_classes((JSONRenderer,))
 def call_dijkstra(request, a_id, b_id):
-    a = Station.objects.filter(id=a_id)[0]
-    b = Station.objects.filter(id=b_id)[0]
-
-    path = compute_path(a, b)
+    path = compute_path(a_id, b_id)
     print(path)
     return Response(path)

@@ -5,6 +5,12 @@ from django.forms import model_to_dict
 # one has to wait 2 minutes before using Veturilo after putting back the bicycle
 STATION_LAG = 120
 DISTANCE_THRESHOLD = 1200
+STATIONS = dict(map(lambda d: (d['id'], (d['name'], d['latitude'], d['longitude'])),
+                    (map(lambda el: model_to_dict(el),
+                         Station.objects.all()))))
+PATHS = dict(map(lambda d: ((d['station_a'], d['station_b']), d['time']),
+                 map(lambda el: model_to_dict(el),
+                     Path.objects.all())))
 
 class Graph:
     def __init__(self):
@@ -25,14 +31,11 @@ class Graph:
 def station_graph():
     result = Graph()
 
-    for station in Station.objects.all():
-        result.add_node(station)
+    for id, _ in STATIONS.items():
+        result.add_node(id)
 
-    for path in Path.objects.all():
-        time = getattr(path, 'time')
-        station_a = getattr(path, 'station_a')
-        station_b = getattr(path, 'station_b')
-        result.add_edge(station_a, station_b, time)
+    for (id_a, id_b), time in PATHS.items():
+        result.add_edge(id_a, id_b, time)
 
     return result
 
@@ -81,13 +84,14 @@ def compute_path(station_a, station_b):
 
     eta = 0
     for i in range(len(path)):
+        id = path[i]
         if i:
             eta += GRAPH.distances[path[i-1], path[i]]
-        station = model_to_dict(path[i])
+        name, lon, lat = STATIONS[id]
         result.append({
-            'name': station['name'],
-            'longitude': station['longitude'],
-            'latitude': station['latitude'],
+            'name': name,
+            'longitude': lon,
+            'latitude': lat,
             'ETA': eta - STATION_LAG if i else 0
         })
 
