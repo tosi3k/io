@@ -25,7 +25,7 @@ SECRET_KEY = '^r^9ahldtvv49dj)0i8l_zt_w*-pzlfmy#du8q1^4$3)p$4&oh'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['lk.mimuw.edu.pl', '193.0.96.129', '127.0.0.1']
+ALLOWED_HOSTS = ['students.mimuw.edu.pl', 'lk.mimuw.edu.pl', '193.0.96.129', '127.0.0.1']
 
 
 # Application definition
@@ -39,11 +39,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_api.apps.RestApiConfig',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -70,6 +72,12 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'ioioio.wsgi.application'
+
+# CORS Headers
+CORS_ORIGIN_ALLOW_ALL = True
+# CORS_ORIGIN_WHITELIST = (
+#     'localhost:3000',
+# )
 
 
 # Database
