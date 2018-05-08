@@ -111,60 +111,6 @@ def get_cords(station):
 
 #### EVERYTHING BELOW UNDER DEVELOPMENT OR FOR TEST PURPOSE ####
 
-# def compute_all_paths(max_count = MAX_COUNT, max_time = 60*60):
-#     gmaps = googlemaps.Client(key = GOOGLE_API_KEY)
-#     groups = group_stations(max_count)
-#
-#     #for testing and safety
-#     # pp = pprint.PrettxyPrinter()
-#     groups = groups[:1]
-#     # pp.pprint(groups)
-#
-#     for p in range(len(groups)):
-#         for q in range(i, len(groups)):
-#             now = datetime.now()
-#             directions_result = gmaps.distance_matrix(groups[p][1], groups[q][1], #from, to
-#                                                       mode="bicycling",
-#                                                       departure_time=now)
-#             req_time = datetime.now()
-#             count = 0
-#             print('request succes')
-#             times = directions_result['rows']
-#             for i in range(len(groups[p][1])):
-#                 row = times[i]['elements']
-#                 for j in range(len(groups[q][1])):
-#                     time = row[j]['duration']['value']
-#                     if time != 0 and time <= max_time:
-#                         count += 2
-#                         # g1[0][i] != g2[0][j] would be probably better option
-#                         # but im not 100% sure how comparison function
-#                         # for model objects works
-#                         add_path(groups[p][0][i], groups[q][0][j], time)
-#             add_time = datetime.now()
-#             print("Req time: ", req_time - now, ", Add time: ", add_time - req_time, "Added ", count, " records")
-#
-# def group_stations(max_count = MAX_COUNT):
-#     result = []
-#
-#     count = 0
-#     names = []
-#     cords = []
-#     for station in Station.objects.all():
-#         name      = station #getattr(station, 'name')
-#         latitude  = getattr(station, 'latitude')
-#         longitude = getattr(station, 'longitude')
-#         names.append(name)
-#         cords.append(latitude + ', ' + longitude)
-#         count += 1
-#
-#         if count == max_count:
-#             result.append((names, cords))
-#             names = []
-#             cords = []
-#             count = 0
-#
-#     return result
-
 def staty(ile = 20):
     odleglosci = 0
     czasy = 0
@@ -192,8 +138,8 @@ def porownanie(gmaps):
     b_cords = getattr(b, 'latitude') + ', ' + getattr(b, 'longitude')
     now = datetime.now()
     directions_result = gmaps.distance_matrix(a_cords, b_cords, #from, to
-    mode="bicycling",
-    departure_time=now)
+                                              mode="bicycling",
+                                              departure_time=now)
     return distance, directions_result['rows'][0]['elements'][0]['duration']['value']
 
 def avg_time():
