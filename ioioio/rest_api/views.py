@@ -1,4 +1,6 @@
 # Create your views here.
+from rest_framework import status
+
 from .path import compute_path, get_id_or_none
 from django.http import HttpResponse
 from rest_framework.response import Response
@@ -40,7 +42,7 @@ def dijkstra(request):
     id_a = get_id_or_none(request.GET.get('station_a'))
     id_b = get_id_or_none(request.GET.get('station_b'))
     if not id_a or not id_b:
-        return Response({'Error': 'Failed to parse the query string'})
+        return Response({'Error': 'Failed to parse the query string'}, status=status.HTTP_404_NOT_FOUND)
     print(id_a, id_b)
     path = compute_path(id_a, id_b)
     print(path)
