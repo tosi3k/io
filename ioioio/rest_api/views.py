@@ -1,19 +1,13 @@
-# Create your views here.
 from rest_framework import status
 
 from .path import compute_path, get_id_or_none
 from django.http import HttpResponse
 from rest_framework.response import Response
 from .maps import staty, patch_test, avg_time
+from .models import Station
 from rest_framework.renderers import JSONRenderer
 from rest_framework.decorators import api_view, renderer_classes
 
-@api_view(['GET'])
-def api_hello_world(request):
-    return Response({
-        'hello2': 'world2',
-        'hello1': 'world1',
-    })
 
 # do testów
 def call_staty(request):
@@ -47,3 +41,18 @@ def dijkstra(request):
     path = compute_path(id_a, id_b)
     print(path)
     return Response(path)
+
+
+@api_view(['GET'])
+@renderer_classes((JSONRenderer,))
+def stations(request):
+    stations = []
+
+    for station in Station.objects.all().order_by('name'):
+        stations.append({
+            'name': station.name,
+            'lat': float(station.latitude),
+            'lon': float(station.longitude)
+        })
+
+    return Response({'stations': stations})

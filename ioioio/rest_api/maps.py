@@ -7,8 +7,6 @@ import json
 from .models import Station, Path
 from django.db.models import Max, Avg
 
-import pprint
-
 MAX_COUNT = 25
 MAX_DISTANCE = 0.06  #0.05 is around 20 min riding
 
