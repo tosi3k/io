@@ -3,6 +3,8 @@ from decimal import *
 import random
 import googlemaps
 import json
+from django.db import transaction
+from googlemaps.exceptions import Timeout as gmTimeoutExceptions
 
 from .models import Station, Path
 from django.db.models import Max, Avg
@@ -14,6 +16,21 @@ def patch_test():
     records, requests = patch(Station.objects.all()[0])
     print("Added %d records, send %d requests" % (records, requests))
     return records, requests
+
+@transaction.atomic()
+def update_paths(key_num = 0):
+    records = 0
+    requests = 0
+    i = 0
+    with open('api_keys.json', 'r') as keys_f:
+        keys = json.load(keys_f)["keys"]
+    for path in Path.objects.all().order_by('last_update'):
+        _, _, succes = compute_paths(getattr(path, 'station_a'), [getattr(path, 'station_b')], keys[key_num])
+        if not succes:
+            break
+        i += 1
+        print("Updated path: %d" % (getattr(path, 'id')))
+    print("Updated %d paths" % (i))
 
 def patch_all(key_num = 0):
     records = 0
@@ -38,7 +55,7 @@ def patch(station, key):
         map_distance(station, b) < Decimal(MAX_DISTANCE):
             destinations.append(b)
 
-    records, requests = compute_paths(station, destinations, key, max_count = 25)
+    records, requests, _ = compute_paths(station, destinations, key, max_count = 25)
     return records, requests
 
 def map_distance(a, b):
@@ -55,23 +72,29 @@ def compute_paths(origin, destinations, key, max_count = MAX_COUNT, max_time = 6
 
     records = 0
     requests = 0
+    succes = True
     for p in range(len(groups)):
         now = datetime.now()
         if len(groups[p][1]) > 0:
-            directions_result = gmaps.distance_matrix(get_cords(origin), groups[p][1],
-                                                      mode="bicycling",
-                                                      departure_time=now)
-            requests += len(groups[p][1])
-            # print('request succes')
-            times = directions_result['rows']
-            for i in range(len(groups[p][1])):
-                row = times[0]['elements']
-                time = row[i]['duration']['value']
-                if time > max_time:
-                    print("More than hour")
-                records += 2
-                add_path(origin, groups[p][0][i], time)
-    return records, requests
+            try:
+                directions_result = gmaps.distance_matrix(get_cords(origin), groups[p][1],
+                                                    mode="bicycling",
+                                                    departure_time=now)
+                requests += len(groups[p][1])
+                times = directions_result['rows']
+                for i in range(len(groups[p][1])):
+                    row = times[0]['elements']
+                    time = row[i]['duration']['value']
+                    length = row[i]['distance']['value']
+                    if time > max_time:
+                        print("More than hour")
+                    records += 2
+                    add_path(origin, groups[p][0][i], time, length)
+                    
+            except gmTimeoutExceptions:
+                succes = False
+
+    return records, requests, succes
 
 def group_destinations(destinations, max_count):
     result = []
@@ -92,14 +115,16 @@ def group_destinations(destinations, max_count):
     result.append((objs, cords))
     return result
 
-def add_path(s_a, s_b, time):
+def add_path(s_a, s_b, time, length):
     path = Path(station_a = s_a,
-    station_b = s_b,
-    time = time)
+                station_b = s_b,
+                time = time,
+                length = length)
     path.save()
     path = Path(station_a = s_b,
-    station_b = s_a,
-    time = time)
+                station_b = s_a,
+                time = time,
+                length = length)
     path.save()
 
 def get_cords(station):
