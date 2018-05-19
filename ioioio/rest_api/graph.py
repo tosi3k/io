@@ -6,45 +6,49 @@ from django.forms import model_to_dict
 
 # one has to wait 2 minutes before using Veturilo after putting back the bicycle
 STATION_LAG = 120
-DISTANCE_THRESHOLD = 1200
+TIME_THRESHOLD = 1200
 
 QUERY_STRING_REGEX = re.compile('^(\d\d(\.\d+)?)\|(\d\d(\.\d+)?)$')
 
-# TODO further cleanup
+# TODO implement nextbike interface with atomic caching of the XML file (w/ a timestamp)
+# maybe cache the graph structure as well?
 
 class Graph:
     def __init__(self):
-        self.nodes = set()
-        self.edges = defaultdict(list)
-        self.distances = {}
-        self._STATIONS = dict(map(lambda d: (d['id'], (d['name'], d['latitude'], d['longitude'])),
+        self._nodes = set()
+        self._edges = defaultdict(list)
+        self._times = {}
+        self._lengths = {}
+        self._stations = dict(map(lambda d: (d['id'], (d['name'], d['latitude'], d['longitude'])),
                                   (map(lambda el: model_to_dict(el),
                                        Station.objects.all()))))
-        self._PATHS = dict(map(lambda d: ((d['station_a'], d['station_b']), d['time']),
+        self._paths = dict(map(lambda d: ((d['station_a'], d['station_b']), (d['time'], d['length'])),
                                map(lambda el: model_to_dict(el),
                                    Path.objects.all())))
 
-        for id, _ in self._STATIONS.items():
+        for id, _ in self._stations.items():
             self._add_node(id)
 
-        for (id_a, id_b), time in self._PATHS.items():
-            self._add_edge(id_a, id_b, time)
+        for (id_a, id_b), (time, length) in self._paths.items():
+            self._add_edge(id_a, id_b, time, length)
 
     def _add_node(self, station):
-        self.nodes.add(station)
+        self._nodes.add(station)
 
-    def _add_edge(self, a, b, distance):
-        if distance <= DISTANCE_THRESHOLD:
-            self.edges[a].append(b)
-            self.edges[b].append(a)
-            self.distances[(a, b)] = distance + STATION_LAG
-            self.distances[(b, a)] = distance + STATION_LAG
+    def _add_edge(self, a, b, time, length):
+        if time <= TIME_THRESHOLD:
+            self._edges[a].append(b)
+            self._edges[b].append(a)
+            self._lengths[(a, b)] = length
+            self._lengths[(b, a)] = length
+            # TODO put lag iff relevant station does not have any bikes
+            self._times[(a, b)] = time + STATION_LAG
+            self._times[(b, a)] = time + STATION_LAG
 
     def _dijkstra(self, source):
         visited = {source: 0}
         path = {source: source}
-
-        nodes = set(self.nodes)
+        nodes = set(self._nodes)
 
         while nodes:
             min_node = None
@@ -62,8 +66,8 @@ class Graph:
             nodes.remove(min_node)
             current_weight = visited[min_node]
 
-            for node in self.edges[min_node]:
-                weight = current_weight + self.distances[(min_node, node)]
+            for node in self._edges[min_node]:
+                weight = current_weight + self._times[(min_node, node)]
                 if node not in visited or weight < visited[node]:
                     visited[node] = weight
                     path[node] = min_node
@@ -82,16 +86,19 @@ class Graph:
         path.insert(0, station_a)
 
         eta = 0
+        total_length = 0
         for i in range(len(path)):
             id = path[i]
             if i:
-                eta += self.distances[path[i-1], path[i]]
-            name, lon, lat = self._STATIONS[id]
+                eta += self._times[path[i - 1], id]
+                total_length += self._lengths[path[i - 1], id]
+            name, lon, lat = self._stations[id]
             result.append({
                 'name': name,
                 'longitude': lon,
                 'latitude': lat,
-                'ETA': eta - STATION_LAG if i else 0
+                'ETA': eta - STATION_LAG if i else 0,
+                'length': total_length
             })
 
         return result
@@ -106,7 +113,8 @@ class Graph:
 
             dist = 100
             result = None
-            for id, (_, lat, lon) in self._STATIONS.items():
+            for id, (_, lat, lon) in self._stations.items():
+                # TODO consider only the stations with bike(s)
                 tmp = float((latitude - Decimal(lat)) ** Decimal(2) + (longitude - Decimal(lon)) ** Decimal(2))
                 if dist > tmp:
                     dist = tmp
