@@ -12,5 +12,4 @@ urlpatterns = [
     path('staty', rest_views.call_staty),
     path('test', rest_views.call_test),
     path('avg', rest_views.call_avg),
-    path('dijkstra2/<int:a_id>/<int:b_id>/', rest_views.call_dijkstra)
 ]
