@@ -1,3 +1,4 @@
+import re
 from decimal import Decimal, InvalidOperation
 from .models import Station, Path
 from collections import defaultdict
@@ -6,6 +7,8 @@ from django.forms import model_to_dict
 # one has to wait 2 minutes before using Veturilo after putting back the bicycle
 STATION_LAG = 120
 DISTANCE_THRESHOLD = 1200
+
+QUERY_STRING_REGEX = re.compile('^(\d\d(\.\d+)?)\|(\d\d(\.\d+)?)$')
 
 # TODO further cleanup
 
@@ -36,9 +39,6 @@ class Graph:
             self.edges[b].append(a)
             self.distances[(a, b)] = distance + STATION_LAG
             self.distances[(b, a)] = distance + STATION_LAG
-
-    def stations(self):
-        return self._STATIONS
 
     def _dijkstra(self, source):
         visited = {source: 0}
@@ -97,13 +97,10 @@ class Graph:
         return result
 
     def get_id_or_none(self, qs_value):
-
-        if qs_value[0].isdigit():
-            coords = qs_value.split('|')
-            if len(coords) != 2:
-                return None
+        if QUERY_STRING_REGEX.match(qs_value):
+            (x, _, y, _) = QUERY_STRING_REGEX.match(qs_value).groups()
             try:
-                latitude, longitude = Decimal(coords[0]), Decimal(coords[1])
+                latitude, longitude = Decimal(x), Decimal(y)
             except InvalidOperation:
                 return None
 
@@ -117,7 +114,4 @@ class Graph:
 
             return result
         else:
-            for id, (name, _, _) in self._STATIONS.items():
-                if name == qs_value:
-                    return id
             return None
