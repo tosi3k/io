@@ -29,13 +29,12 @@ def call_avg(requests):
 @api_view(['GET'])
 @renderer_classes((JSONRenderer,))
 def dijkstra(request):
-    graph = Graph()
-    id_a = graph.get_id_or_none(request.GET.get('station_a'))
-    id_b = graph.get_id_or_none(request.GET.get('station_b'))
+    id_a = Graph.get_id_or_none(request.GET.get('station_a'))
+    id_b = Graph.get_id_or_none(request.GET.get('station_b'))
     if not id_a or not id_b:
         return Response({'Error': 'Failed to parse the query string'}, status=status.HTTP_404_NOT_FOUND)
     print(id_a, id_b)
-    path = graph.compute_path(id_a, id_b)
+    path = Graph.compute_path(id_a, id_b)
     print(path)
     return Response(path)
 

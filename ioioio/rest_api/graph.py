@@ -1,4 +1,7 @@
+import datetime
 import re
+import time
+from multiprocessing import Lock
 from .models import Station, Path
 from collections import defaultdict
 from django.forms import model_to_dict
@@ -13,42 +16,50 @@ QUERY_STRING_REGEX = re.compile('^(\d\d(\.\d+)?)\|(\d\d(\.\d+)?)$')
 
 
 class Graph:
-    def __init__(self):
-        self._nodes = set()
-        self._edges = defaultdict(list)
-        self._times = {}
-        self._lengths = {}
-        self._stations = dict(map(lambda d: (d['id'], (d['name'], d['latitude'], d['longitude'])),
+    lock = Lock()
+
+    @staticmethod
+    def _refresh_graph():
+        Graph._nodes = set()
+        Graph._edges = defaultdict(list)
+        Graph._times = {}
+        Graph._lengths = {}
+        Graph._stations = dict(map(lambda d: (d['id'], (d['name'], d['latitude'], d['longitude'])),
                                   (map(lambda el: model_to_dict(el),
                                        Station.objects.all()))))
-        self._paths = dict(map(lambda d: ((d['station_a'], d['station_b']), (d['time'], d['length'])),
+        Graph._paths = dict(map(lambda d: ((d['station_a'], d['station_b']), (d['time'], d['length'])),
                                map(lambda el: model_to_dict(el),
                                    Path.objects.all())))
 
-        self._stations_with_bike = set(NextbikeCache.stations_with_bike())
+        Graph._stations_with_bike = set(NextbikeCache.stations_with_bike())
 
-        for id, _ in self._stations.items():
-            self._add_node(id)
+        for id, _ in Graph._stations.items():
+            Graph._add_node(id)
 
-        for (id_a, id_b), (time, length) in self._paths.items():
-            self._add_edge(id_a, id_b, time, length)
+        for (id_a, id_b), (t, length) in Graph._paths.items():
+            Graph._add_edge(id_a, id_b, t, length)
 
-    def _add_node(self, station):
-        self._nodes.add(station)
+        Graph._last_edit = time.time()
 
-    def _add_edge(self, a, b, time, length):
+    @staticmethod
+    def _add_node(station):
+        Graph._nodes.add(station)
+
+    @staticmethod
+    def _add_edge(a, b, time, length):
         if time <= TIME_THRESHOLD:
-            self._edges[a].append(b)
-            self._edges[b].append(a)
-            self._lengths[(a, b)] = length
-            self._lengths[(b, a)] = length
-            self._times[(a, b)] = time if a in self._stations_with_bike else time + STATION_LAG
-            self._times[(b, a)] = time if b in self._stations_with_bike else time + STATION_LAG
+            Graph._edges[a].append(b)
+            Graph._edges[b].append(a)
+            Graph._lengths[(a, b)] = length
+            Graph._lengths[(b, a)] = length
+            Graph._times[(a, b)] = time if a in Graph._stations_with_bike else time + STATION_LAG
+            Graph._times[(b, a)] = time if b in Graph._stations_with_bike else time + STATION_LAG
 
-    def _dijkstra(self, source):
+    @staticmethod
+    def _dijkstra(source):
         visited = {source: 0}
         path = {source: source}
-        nodes = set(self._nodes)
+        nodes = set(Graph._nodes)
 
         while nodes:
             min_node = None
@@ -66,16 +77,17 @@ class Graph:
             nodes.remove(min_node)
             current_weight = visited[min_node]
 
-            for node in self._edges[min_node]:
-                weight = current_weight + self._times[(min_node, node)]
+            for node in Graph._edges[min_node]:
+                weight = current_weight + Graph._times[(min_node, node)]
                 if node not in visited or weight < visited[node]:
                     visited[node] = weight
                     path[node] = min_node
 
         return path
 
-    def compute_path(self, station_a, station_b):
-        tree = self._dijkstra(station_a)
+    @staticmethod
+    def compute_path(station_a, station_b):
+        tree = Graph._dijkstra(station_a)
         path = []
         result = []
 
@@ -90,9 +102,9 @@ class Graph:
         for i in range(len(path)):
             id = path[i]
             if i:
-                eta += self._times[path[i - 1], id]
-                total_length += self._lengths[path[i - 1], id]
-            name, lon, lat = self._stations[id]
+                eta += Graph._times[path[i - 1], id]
+                total_length += Graph._lengths[path[i - 1], id]
+            name, lon, lat = Graph._stations[id]
             result.append({
                 'name': name,
                 'longitude': lon,
@@ -103,7 +115,8 @@ class Graph:
 
         return result
 
-    def get_id_or_none(self, qs_value):
+    @staticmethod
+    def get_id_or_none(qs_value):
         if QUERY_STRING_REGEX.match(qs_value):
             (x, _, y, _) = QUERY_STRING_REGEX.match(qs_value).groups()
             try:
@@ -111,10 +124,16 @@ class Graph:
             except InvalidOperation:
                 return None
 
+            Graph.lock.acquire()
+            if not hasattr(Graph, '_last_edit') or time.time() - Graph._last_edit > datetime.timedelta(minutes=1).total_seconds():
+                Graph._refresh_graph()
+            Graph.lock.release()
+
             dist = 100
             result = None
-            for id, (_, lat, lon) in self._stations.items():
-                if id in self._stations_with_bike:
+
+            for id, (_, lat, lon) in Graph._stations.items():
+                if id in Graph._stations_with_bike:
                     tmp = float((latitude - Decimal(lat)) ** Decimal(2) + (longitude - Decimal(lon)) ** Decimal(2))
                     if dist > tmp:
                         dist = tmp
