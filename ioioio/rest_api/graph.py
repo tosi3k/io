@@ -11,8 +11,6 @@ TIME_THRESHOLD = 1200
 
 QUERY_STRING_REGEX = re.compile('^(\d\d(\.\d+)?)\|(\d\d(\.\d+)?)$')
 
-# TODO implement nextbike interface with atomic caching of the XML file (w/ a timestamp)
-# maybe cache the graph structure as well?
 
 class Graph:
     def __init__(self):
@@ -116,11 +114,11 @@ class Graph:
             dist = 100
             result = None
             for id, (_, lat, lon) in self._stations.items():
-                # TODO consider only the stations with bike(s)
-                tmp = float((latitude - Decimal(lat)) ** Decimal(2) + (longitude - Decimal(lon)) ** Decimal(2))
-                if dist > tmp:
-                    dist = tmp
-                    result = id
+                if id in self._stations_with_bike:
+                    tmp = float((latitude - Decimal(lat)) ** Decimal(2) + (longitude - Decimal(lon)) ** Decimal(2))
+                    if dist > tmp:
+                        dist = tmp
+                        result = id
 
             return result
         else:
