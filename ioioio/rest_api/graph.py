@@ -1,8 +1,9 @@
 import re
-from decimal import Decimal, InvalidOperation
 from .models import Station, Path
 from collections import defaultdict
 from django.forms import model_to_dict
+from decimal import Decimal, InvalidOperation
+from .nextbike import NextbikeCache
 
 # one has to wait 2 minutes before using Veturilo after putting back the bicycle
 STATION_LAG = 120
@@ -26,6 +27,8 @@ class Graph:
                                map(lambda el: model_to_dict(el),
                                    Path.objects.all())))
 
+        self._stations_with_bike = set(NextbikeCache.stations_with_bike())
+
         for id, _ in self._stations.items():
             self._add_node(id)
 
@@ -41,9 +44,8 @@ class Graph:
             self._edges[b].append(a)
             self._lengths[(a, b)] = length
             self._lengths[(b, a)] = length
-            # TODO put lag iff relevant station does not have any bikes
-            self._times[(a, b)] = time + STATION_LAG
-            self._times[(b, a)] = time + STATION_LAG
+            self._times[(a, b)] = time if a in self._stations_with_bike else time + STATION_LAG
+            self._times[(b, a)] = time if b in self._stations_with_bike else time + STATION_LAG
 
     def _dijkstra(self, source):
         visited = {source: 0}
@@ -97,7 +99,7 @@ class Graph:
                 'name': name,
                 'longitude': lon,
                 'latitude': lat,
-                'ETA': eta - STATION_LAG if i else 0,
+                'ETA': eta,
                 'length': total_length
             })
 
