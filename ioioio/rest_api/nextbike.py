@@ -22,19 +22,22 @@ class NextbikeCache:
         NextbikeCache.lock.acquire()
         if not os.path.isfile(NEXTBIKE_XML) or NextbikeCache._old_xml():
             xml_contents = urllib.request.urlopen(NEXTBIKE_URL).read()
-            if len(xml_contents) > 0:
-                tree = ET.fromstring(xml_contents)
+            if not os.path.isfile(NEXTBIKE_XML) and not len(xml_contents):
+                NextbikeCache.lock.release()
+                return None
+            elif not os.path.isfile(NEXTBIKE_XML):
                 f = open(NEXTBIKE_XML, 'w')
-                f.write(xml_contents.decode("utf-8"))
+                f.write(xml_contents.decode('utf-8'))
                 f.close()
-        else:
-            tree = ET.parse(NEXTBIKE_XML).getroot()
+        tree = ET.parse(NEXTBIKE_XML).getroot()
         NextbikeCache.lock.release()
         return tree
 
     @staticmethod
     def stations_with_bike():
         xml = NextbikeCache._nextbike_xml()
+        if not xml:
+            return Station.objects.all().values_list('id', flat=True)
         names = []
         for place in xml[0][0]:
             if int(place.attrib['bikes']):
