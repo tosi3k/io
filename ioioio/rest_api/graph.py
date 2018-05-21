@@ -25,11 +25,11 @@ class Graph:
         Graph._times = {}
         Graph._lengths = {}
         Graph._stations = dict(map(lambda d: (d['id'], (d['name'], d['latitude'], d['longitude'])),
-                                  (map(lambda el: model_to_dict(el),
-                                       Station.objects.all()))))
+                                   (map(lambda el: model_to_dict(el),
+                                        Station.objects.all()))))
         Graph._paths = dict(map(lambda d: ((d['station_a'], d['station_b']), (d['time'], d['length'])),
-                               map(lambda el: model_to_dict(el),
-                                   Path.objects.all())))
+                                map(lambda el: model_to_dict(el),
+                                    Path.objects.all())))
 
         Graph._stations_with_bike = set(NextbikeCache.stations_with_bike())
 

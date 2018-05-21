@@ -22,10 +22,11 @@ class NextbikeCache:
         NextbikeCache.lock.acquire()
         if not os.path.isfile(NEXTBIKE_XML) or NextbikeCache._old_xml():
             xml_contents = urllib.request.urlopen(NEXTBIKE_URL).read()
-            tree = ET.fromstring(xml_contents)
-            f = open(NEXTBIKE_XML, 'w')
-            f.write(xml_contents.decode("utf-8"))
-            f.close()
+            if len(xml_contents) > 0:
+                tree = ET.fromstring(xml_contents)
+                f = open(NEXTBIKE_XML, 'w')
+                f.write(xml_contents.decode("utf-8"))
+                f.close()
         else:
             tree = ET.parse(NEXTBIKE_XML).getroot()
         NextbikeCache.lock.release()
