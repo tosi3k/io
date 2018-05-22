@@ -9,7 +9,8 @@ from decimal import Decimal, InvalidOperation
 from .nextbike import NextbikeCache
 
 # one has to wait 2 minutes before using Veturilo after putting back the bicycle
-STATION_LAG = 120
+STATION_LAG = 180
+CHANGE_LAG = 60
 TIME_THRESHOLD = 1200
 
 QUERY_STRING_REGEX = re.compile('^(\d\d(\.\d+)?)\|(\d\d(\.\d+)?)$')
@@ -52,8 +53,8 @@ class Graph:
             Graph._edges[b].append(a)
             Graph._lengths[(a, b)] = length
             Graph._lengths[(b, a)] = length
-            Graph._times[(a, b)] = time if a in Graph._stations_with_bike else time + STATION_LAG
-            Graph._times[(b, a)] = time if b in Graph._stations_with_bike else time + STATION_LAG
+            Graph._times[(a, b)] = time + CHANGE_LAG if a in Graph._stations_with_bike else time + STATION_LAG
+            Graph._times[(b, a)] = time + CHANGE_LAG if b in Graph._stations_with_bike else time + STATION_LAG
 
     @staticmethod
     def _dijkstra(source):
