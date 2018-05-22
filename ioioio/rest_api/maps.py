@@ -18,29 +18,26 @@ def patch_test():
     return records, requests
 
 @transaction.atomic()
-def update_paths(key_num = 0):
+def update_paths(key):
     records = 0
     requests = 0
     i = 0
-    with open('api_keys.json', 'r') as keys_f:
-        keys = json.load(keys_f)["keys"]
     for path in Path.objects.all().order_by('last_update'):
-        _, _, succes = compute_paths(getattr(path, 'station_a'), [getattr(path, 'station_b')], keys[key_num])
+        _, _, succes = compute_paths(getattr(path, 'station_a'), [getattr(path, 'station_b')], key)
         if not succes:
             break
         i += 1
         print("Updated path: %d" % (getattr(path, 'id')))
     print("Updated %d paths" % (i))
 
-def patch_all(key_num = 0):
+@transaction.atomic()
+def patch_all(key):
     records = 0
     requests = 0
     i = 0
-    with open('api_keys.json', 'r') as keys_f:
-        keys = json.load(keys_f)["keys"]
     for station in Station.objects.all():
         i += 1
-        rec, req = patch(station, keys[key_num])
+        rec, req = patch(station, key)
         print("Computed %d stations, saved  %d records, send %d requests so far" % (i, records, requests))
         records += rec
         requests += req
@@ -52,13 +49,13 @@ def patch(station, key):
     for b in Station.objects.all():
         if b != station and \
         len(Path.objects.filter(station_a = station, station_b = b)) == 0 and \
-        map_distance(station, b) < Decimal(MAX_DISTANCE):
+        lazy_distance(station, b) < Decimal(MAX_DISTANCE):
             destinations.append(b)
 
     records, requests, _ = compute_paths(station, destinations, key, max_count = 25)
     return records, requests
 
-def map_distance(a, b):
+def lazy_distance(a, b):
     alat = Decimal(getattr(a, 'latitude'))
     alon = Decimal(getattr(a, 'longitude'))
     blat = Decimal(getattr(b, 'latitude'))
@@ -90,7 +87,7 @@ def compute_paths(origin, destinations, key, max_count = MAX_COUNT, max_time = 6
                         print("More than hour")
                     records += 2
                     add_path(origin, groups[p][0][i], time, length)
-                    
+
             except gmTimeoutExceptions:
                 succes = False
 
