@@ -105,7 +105,7 @@ class Graph:
             if i:
                 eta += Graph._times[path[i - 1], id]
                 total_length += Graph._lengths[path[i - 1], id]
-            name, lon, lat = Graph._stations[id]
+            name, lat, lon = Graph._stations[id]
             result.append({
                 'name': name,
                 'longitude': lon,
