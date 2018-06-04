@@ -1,10 +1,11 @@
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 
 from .graph import Graph
 from django.http import HttpResponse
 from rest_framework.response import Response
 from .maps import staty, patch_test, avg_time
-from .models import Station
+from .models import Station, Email
 from rest_framework.renderers import JSONRenderer
 from rest_framework.decorators import api_view, renderer_classes
 
@@ -52,3 +53,23 @@ def stations(request):
         })
 
     return Response({'stations': stations})
+
+
+@csrf_exempt
+@api_view(['POST'])
+def register_email(request):
+    topic = request.POST['topic']
+    first_name = request.POST['firstName']
+    second_name = request.POST['secondName']
+    email = request.POST['email']
+    content = request.POST['content']
+    try:
+        new_email = Email(topic=topic,
+                          first_name=first_name,
+                          second_name=second_name,
+                          email=email,
+                          content=content)
+        new_email.save()
+    except:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+    return Response(status=status.HTTP_201_CREATED)
