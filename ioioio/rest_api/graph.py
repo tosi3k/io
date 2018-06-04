@@ -15,6 +15,10 @@ TIME_THRESHOLD = 1200
 
 QUERY_STRING_REGEX = re.compile('^(\d\d(\.\d+)?)\|(\d\d(\.\d+)?)$')
 
+# degree to meters for Warsaw
+DEGREE_LAT = 68400
+DEGREE_LON = 111100
+
 
 class Graph:
     lock = Lock()
@@ -117,9 +121,64 @@ class Graph:
         return result
 
     @staticmethod
+    def add_start(path, x, y):
+        lat, lon = Decimal(x), Decimal(y)
+        end_lat, end_lon = Decimal(path[0]['latitude']), Decimal(path[0]['longitude'])
+
+        lat_diff = (lat - end_lat) * DEGREE_LAT
+        lon_diff = (lon - end_lon) * DEGREE_LON
+
+        dist = int((lat_diff ** 2 + lon_diff ** 2).sqrt())
+
+        eta = int(dist / 3)
+
+        start = {
+            'name': 'Start',
+            'longitude': lon,
+            'latitude': lat,
+            'ETA': eta,
+            'length': dist
+        }
+
+        for i in range(len(path)):
+            path[i]['ETA'] += eta
+            path[i]['length'] += dist
+
+        path = [start] + path
+        return path
+
+    @staticmethod
+    def add_end(path, x, y):
+        lat, lon = Decimal(x), Decimal(y)
+        end_lat, end_lon = Decimal(path[-1]['latitude']), Decimal(path[-1]['longitude'])
+
+        lat_diff = (lat - end_lat) * DEGREE_LAT
+        lon_diff = (lon - end_lon) * DEGREE_LON
+
+        dist = int((lat_diff**2 + lon_diff**2).sqrt())
+
+        eta = int(dist / 3)
+
+        end = {
+            'name': 'End',
+            'longitude': lon,
+            'latitude': lat,
+            'length': dist + path[-1]['length'],
+            'ETA': path[-1]['ETA'] + eta
+        }
+
+        path = path + [end]
+        return path
+
+    @staticmethod
+    def get_coords(qs_value):
+        (x, _, y, _) = QUERY_STRING_REGEX.match(qs_value).groups()
+        return x, y
+
+    @staticmethod
     def get_id_or_none(qs_value):
         if QUERY_STRING_REGEX.match(qs_value):
-            (x, _, y, _) = QUERY_STRING_REGEX.match(qs_value).groups()
+            x, y = Graph.get_coords(qs_value)
             try:
                 latitude, longitude = Decimal(x), Decimal(y)
             except InvalidOperation:

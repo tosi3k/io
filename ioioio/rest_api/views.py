@@ -34,8 +34,14 @@ def dijkstra(request):
     id_b = Graph.get_id_or_none(request.GET.get('station_b'))
     if not id_a or not id_b:
         return Response({'Error': 'Failed to parse the query string'}, status=status.HTTP_404_NOT_FOUND)
+
+    x1, y1 = Graph.get_coords(request.GET.get('station_a'))
+    x2, y2 = Graph.get_coords(request.GET.get('station_b'))
+
     print(id_a, id_b)
     path = Graph.compute_path(id_a, id_b)
+    path = Graph.add_start(path, x1, y1)
+    path = Graph.add_end(path, x2, y2)
     print(path)
     return Response(path)
 
