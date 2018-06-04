@@ -122,8 +122,8 @@ class Graph:
 
     @staticmethod
     def add_start(path, x, y):
-        lat, lon = Decimal(x), Decimal(y)
-        end_lat, end_lon = Decimal(path[0]['latitude']), Decimal(path[0]['longitude'])
+        lon, lat = Decimal(x), Decimal(y)
+        end_lon, end_lat = Decimal(path[0]['latitude']), Decimal(path[0]['longitude'])
 
         lat_diff = (lat - end_lat) * DEGREE_LAT
         lon_diff = (lon - end_lon) * DEGREE_LON
@@ -131,6 +131,9 @@ class Graph:
         dist = int((lat_diff ** 2 + lon_diff ** 2).sqrt())
 
         eta = int(dist / 3)
+
+        if eta < CHANGE_LAG:
+            return path
 
         start = {
             'name': 'Start',
@@ -149,8 +152,8 @@ class Graph:
 
     @staticmethod
     def add_end(path, x, y):
-        lat, lon = Decimal(x), Decimal(y)
-        end_lat, end_lon = Decimal(path[-1]['latitude']), Decimal(path[-1]['longitude'])
+        lon, lat = Decimal(x), Decimal(y)
+        end_lon, end_lat = Decimal(path[-1]['latitude']), Decimal(path[-1]['longitude'])
 
         lat_diff = (lat - end_lat) * DEGREE_LAT
         lon_diff = (lon - end_lon) * DEGREE_LON
@@ -158,6 +161,9 @@ class Graph:
         dist = int((lat_diff**2 + lon_diff**2).sqrt())
 
         eta = int(dist / 3)
+
+        if eta < CHANGE_LAG:
+            return path
 
         end = {
             'name': 'Koniec',
