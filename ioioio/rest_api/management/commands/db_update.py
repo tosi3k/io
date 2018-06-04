@@ -22,7 +22,8 @@ class Command(BaseCommand):
             with open(keys_filename, 'r') as keys_f:
                 keys = json.load(keys_f)["keys"]
 
-            patch_all(keys[0])
-            update_paths(keys[0])
+            # patch_all(keys[0])
+            for key in keys:
+                update_paths(key)
 
             self.stdout.write(self.style.SUCCESS('Successfully updated database'))

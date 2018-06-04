@@ -17,17 +17,19 @@ def patch_test():
     print("Added %d records, send %d requests" % (records, requests))
     return records, requests
 
-@transaction.atomic()
+
 def update_paths(key):
     records = 0
     requests = 0
     i = 0
+    gmaps = googlemaps.Client(key = key)
     for path in Path.objects.all().order_by('last_update'):
-        _, _, succes = compute_paths(getattr(path, 'station_a'), [getattr(path, 'station_b')], key)
-        if not succes:
+       succes = update_path(path, gmaps)
+
+       if not succes:
             break
-        i += 1
-        print("Updated path: %d" % (getattr(path, 'id')))
+       i += 1
+       print("Updated path: %d" % (getattr(path, 'id')))
     print("Updated %d paths" % (i))
 
 @transaction.atomic()
@@ -62,6 +64,22 @@ def lazy_distance(a, b):
     blon = Decimal(getattr(b, 'longitude'))
 
     return ((alat - blat)**Decimal(2) + (alon - blon)**Decimal(2))**Decimal(0.5)
+
+def update_path(path, gmaps):
+    succes = True
+
+    try:
+        directions_result = gmaps.distance_matrix(get_cords(getattr(path, 'station_a')),
+                                                  get_cords(getattr(path, 'station_b')),
+                                                  mode='bicycling', departure_time=datetime.now())
+        element = directions_result['rows'][0]['elements'][0]
+        path.time = element['duration']['value']
+        path.length = element['duration']['value']
+        path.save()
+
+    except gmTimeoutExceptions:
+        succes = False
+    return succes   
 
 def compute_paths(origin, destinations, key, max_count = MAX_COUNT, max_time = 60*60):
     gmaps = googlemaps.Client(key = key)
