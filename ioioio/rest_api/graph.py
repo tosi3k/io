@@ -160,7 +160,7 @@ class Graph:
         eta = int(dist / 3)
 
         end = {
-            'name': 'End',
+            'name': 'Koniec',
             'longitude': lon,
             'latitude': lat,
             'length': dist + path[-1]['length'],
