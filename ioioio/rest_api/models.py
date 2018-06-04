@@ -22,3 +22,6 @@ class Email(models.Model):
     second_name = models.CharField(max_length=32)
     email       = models.TextField(max_length=64)
     content     = models.TextField()
+
+    def __str__(self):
+        return '{} ({} {})'.format(self.topic, self.first_name, self.second_name)
