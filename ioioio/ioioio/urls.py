@@ -6,6 +6,7 @@ from rest_api import views as rest_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('dijkstra', rest_views.dijkstra),
+    path('register_email', rest_views.register_email),
     path('stations', rest_views.stations),
     
     # do testów
